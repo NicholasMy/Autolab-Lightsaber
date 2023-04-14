@@ -7,10 +7,13 @@
 <h1>Autolab Lightsaber</h1>
 <p>This is a testing page and probably won't work in production.</p>
 
-<div id="messages"></div>
+<ol>
+    <div id="messages"></div>
+</ol>
+<!-- That's not valid HTML, but it's fine for testing -->
 
 <script>
-    const ws = new WebSocket("ws://localhost:6333");
+    const ws = new WebSocket("ws://localhost:6333/ws");
     const messages = document.getElementById("messages");
     ws.onmessage = (event) => {
         // Add a bullet point to the list of messages
