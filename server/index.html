@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Autolab Lightsaber</title>
+</head>
+<body>
+<h1>Autolab Lightsaber</h1>
+<p>This is a testing page and probably won't work in production.</p>
+
+<div id="messages"></div>
+
+<script>
+    const ws = new WebSocket("ws://localhost:6333");
+    const messages = document.getElementById("messages");
+    ws.onmessage = (event) => {
+        // Add a bullet point to the list of messages
+        messages.innerHTML += "<li>" + event.data + "</li>";
+    };
+
+</script>
+
+</body>
+</html>
