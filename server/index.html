@@ -14,7 +14,7 @@
 
 <script>
     // const ws = new WebSocket("ws://localhost:6333/ws");
-    const ws = new WebSocket(`ws://${window.location.hostname}:6334/ws`);
+    const ws = new WebSocket(`${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.hostname}:6334/ws`);
     const messages = document.getElementById("messages");
     ws.onmessage = (event) => {
         // Add a bullet point to the list of messages
