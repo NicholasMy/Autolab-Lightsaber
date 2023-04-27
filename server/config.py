@@ -1,0 +1,1 @@
+TANGO_POLLING_INTERVAL: float = 2.0

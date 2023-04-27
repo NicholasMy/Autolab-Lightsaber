@@ -17,15 +17,13 @@ class LightsaberWebSocket(tornado.websocket.WebSocketHandler):
 
     def open(self):
         LightsaberWebSocket.clients.add(self)
-        print("WebSocket opened")
         self.send_entire_state()
 
     def on_message(self, message):
-        print("Message received: " + message)
+        pass
 
     def on_close(self):
         LightsaberWebSocket.clients.remove(self)
-        print("WebSocket closed")
 
     @classmethod
     def broadcast(cls, message: str):
@@ -33,12 +31,12 @@ class LightsaberWebSocket(tornado.websocket.WebSocketHandler):
             client.write_message(message)
 
     def check_origin(self, origin: str) -> bool:
-        # This is insecure, but it's just for testing.
+        # This would be considered insecure on a website, but this is fine for our microcontroller
+        # Besides, Nginx can add the correct headers anyway
         return True
 
     def send_entire_state(self):
         # Called on initial connection
-        print("Sending entire state")
         self.write_message(json.dumps(get_dummy_data()))
 
     @staticmethod
@@ -49,6 +47,9 @@ class LightsaberWebSocket(tornado.websocket.WebSocketHandler):
 
 
 class MainHandler(tornado.web.RequestHandler):
+
+    def data_received(self, chunk: bytes) -> Optional[Awaitable[None]]:
+        pass
 
     def get(self):
         self.render("index.html")
