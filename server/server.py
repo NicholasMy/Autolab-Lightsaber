@@ -72,10 +72,25 @@ def update_sender():
     old_lightsaber = lightsaber.copy()
     tango = TangoConnection(secret.TANGO_URL, secret.TANGO_KEY)
     jobs = tango.get_current_jobs_count()
-    blue = [0, 0, 255]
-    red = [255, 0, 0]
-    color = blue if jobs < 3 else red
-    lightsaber.fill_percent(jobs * 100 // 5, color)
+    color = []
+    if jobs == 0:
+        lightsaber.clear_leds()
+        lightsaber.fill_range(0, 5, [0, 255, 0])
+    # Make the lightsaber more red as the number of jobs increases
+    elif jobs == 1:
+        color = [0, 0, 255]
+    elif jobs == 2:
+        color = [100, 0, 200]
+    elif jobs == 3:
+        color = [150, 0, 150]
+    elif jobs == 4:
+        color = [200, 0, 100]
+    elif jobs >= 5:
+        color = [255, 0, 0]
+
+    if jobs != 0:
+        lightsaber.fill_percent(jobs * 100 // 5, color)
+
     difference = lightsaber.get_difference_map(old_lightsaber)
     LightsaberWebSocket.send_updated_state(difference)
     print(str(lightsaber))
