@@ -13,7 +13,6 @@ class TangoConnection:
             url = f"{self.url}/jobs/{self.tango_api_key}/0/"
             res = requests.get(url)
             js = res.json()
-            print(js)
             jobs_count = len(js["jobs"])
             return jobs_count
 

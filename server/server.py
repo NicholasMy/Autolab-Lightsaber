@@ -1,11 +1,15 @@
 import asyncio
 import json
-import random
 from typing import Optional, Awaitable
 
 import tornado.web
 import tornado.websocket
 import tornado.ioloop
+
+import secret
+import config
+from TangoConnection import TangoConnection
+from LedStrip import LedStrip
 
 
 class LightsaberWebSocket(tornado.websocket.WebSocketHandler):
@@ -37,13 +41,12 @@ class LightsaberWebSocket(tornado.websocket.WebSocketHandler):
 
     def send_entire_state(self):
         # Called on initial connection
-        self.write_message(json.dumps(get_dummy_data()))
+        self.write_message(json.dumps(lightsaber.to_dict()))
 
     @staticmethod
-    def send_updated_state():
+    def send_updated_state(update_map: dict):
         # Called when the light needs to update
-        # TODO this will actually be called when Autolab's stress level changes
-        LightsaberWebSocket.broadcast(json.dumps(get_dummy_update()))
+        LightsaberWebSocket.broadcast(json.dumps(update_map))
 
 
 class MainHandler(tornado.web.RequestHandler):
@@ -62,46 +65,27 @@ def make_app():
     ])
 
 
-def get_dummy_data():
-    return {
-        "brightness": 5,
-        0: [1, 2, 3],
-        1: [4, 5, 6],
-        2: [7, 8, 9],
-        3: [10, 11, 12],
-        4: [13, 14, 15],
-        5: [16, 17, 18],
-    }
+lightsaber = LedStrip(config.MAX_LED_INDEX, config.DEFAULT_LED_BRIGHTNESS)
 
 
-def get_dummy_update():
-    valid_leds = [0, 1, 2, 3, 4, 5]
-    number_of_updates = random.randint(1, 3)
-    leds_to_update = random.sample(valid_leds, number_of_updates)
-
-    ret = {}
-
-    for led in leds_to_update:
-        vals = get_dummy_data()[led]
-        ret[led] = [vals[0] + random.randint(1, 100), vals[1] + random.randint(1, 100),
-                    vals[2] + random.randint(1, 100)]
-
-    update_brightness = random.randint(0, 3)
-    if update_brightness == 0:
-        ret["brightness"] = random.randint(2, 10)
-
-    return ret
-
-
-def dummy_sender():
-    LightsaberWebSocket.send_updated_state()
+def update_sender():
+    old_lightsaber = lightsaber.copy()
+    tango = TangoConnection(secret.TANGO_URL, secret.TANGO_KEY)
+    jobs = tango.get_current_jobs_count()
+    blue = [0, 0, 255]
+    red = [255, 0, 0]
+    color = blue if jobs < 3 else red
+    lightsaber.fill_percent(jobs * 100 // 5, color)
+    difference = lightsaber.get_difference_map(old_lightsaber)
+    LightsaberWebSocket.send_updated_state(difference)
+    print(str(lightsaber))
 
 
 async def main():
     app = make_app()
     app.listen(6333)
 
-    background_sender = tornado.ioloop.PeriodicCallback(dummy_sender, 1000)
+    background_sender = tornado.ioloop.PeriodicCallback(update_sender, 1000 * config.TANGO_POLLING_INTERVAL)
     background_sender.start()
 
     await asyncio.Event().wait()
