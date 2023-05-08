@@ -45,9 +45,10 @@ class LedStrip:
         return ret
 
     def fill_range(self, start: int, end: int, color: List[int]):
+        # Fill the range of LEDs from start to end (inclusive) with color
         start = max(0, start)
         end = min(self.max_led_index, end)
-        for i in range(start, end):
+        for i in range(start, end + 1):
             self.leds[i] = color
 
     def fill_percent(self, percent: float, color: List[int]):
