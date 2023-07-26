@@ -7,6 +7,8 @@
 <h1>Autolab Lightsaber</h1>
 <p>This is a testing page and probably won't work in production.</p>
 
+<div id="lightsaber"></div>
+
 <ol>
     <div id="messages"></div>
 </ol>
@@ -14,12 +16,36 @@
 
 <script>
     // const ws = new WebSocket("ws://localhost:6333/ws");
+    let lightsaberLength = -1;
     const ws = new WebSocket(`${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.hostname}:${window.location.port}/ws`);
     const messages = document.getElementById("messages");
     ws.onmessage = (event) => {
         // Add a bullet point to the list of messages
         messages.innerHTML += "<li>" + event.data + "</li>";
+        if (lightsaberLength === -1) {
+            lightsaberLength = Object.keys(JSON.parse(event.data)).length - 1;  // Subtract 1 because the "brightness" is a key
+        }
+        renderLightsaberPreview(JSON.parse(event.data));
     };
+
+    function renderLightsaberPreview(data) {
+        const lightsaber = document.getElementById("lightsaber");
+        lightsaber.innerHTML = "";
+        // Data is formatted as an object where the key is the LED number and the value is the color as an RGB array
+        // Create a small div for each LED in the lightsaber
+        for (let i = 0; i < lightsaberLength; i++) {
+            const led = document.createElement("div");
+            led.style.width = "5px";
+            led.style.height = "10px";
+            led.style.display = "inline-block";
+            try {
+                led.style.backgroundColor = `rgb(${data[i][0]}, ${data[i][1]}, ${data[i][2]})`;
+            } catch (e) {
+                led.style.backgroundColor = "black";
+            }
+            lightsaber.appendChild(led);
+        }
+    }
 
 </script>
 
