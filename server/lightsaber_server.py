@@ -67,14 +67,12 @@ def make_app():
 
 
 lightsaber = AnimatedLedStrip(config.MAX_LED_INDEX, config.DEFAULT_LED_BRIGHTNESS)
-old_lightsaber = lightsaber.led_strip.copy()
-last_update_time = datetime.datetime.now()
-ANIMATION_DURATION_SECS = 2.5
-DATA_FETCH_SECS = 1.0
-WS_SEND_FREQUENCY_SECS = 0.03
+old_lightsaber_led_strip = lightsaber.led_strip.copy()
+last_update_time = datetime.datetime.now() - datetime.timedelta(seconds=config.DATA_FETCH_SECS)
 
 
 def update_target():
+    # TODO get actual data from Tango and determine how to represent it on the Lightsaber
     # portal = AutolabPortalConnection(secret.PORTAL_URL, secret.PORTAL_API_KEY)
     # jobs = portal.get_tango_histogram()[86400]
     # jobs = random.randint(0, 5)
@@ -89,30 +87,29 @@ def update_target():
         build_linear_color_map([0, 255, 0], [0, 0, 255], config.MAX_LED_INDEX),
         build_linear_color_map([0, 0, 255], [0, 255, 0], config.MAX_LED_INDEX),
     ])
-    lightsaber.set_target_state(target_length, color_map, random.random() * ANIMATION_DURATION_SECS + 0.5)
+    lightsaber.set_target_state(target_length, color_map, config.ANIMATION_DURATION_SECS)
 
 
 def update_sender():
-    global lightsaber, old_lightsaber, last_update_time
+    # Computes the current frame of the Lightsaber and broadcasts the difference to all clients
+    global lightsaber, old_lightsaber_led_strip, last_update_time
 
     now = datetime.datetime.now()
-    if now - last_update_time > datetime.timedelta(seconds=DATA_FETCH_SECS):
+    if now - last_update_time > datetime.timedelta(seconds=config.DATA_FETCH_SECS):
         update_target()
         last_update_time = now
 
-    new_lightsaber = lightsaber.led_strip.copy()
-
-    difference = new_lightsaber.get_difference_map(old_lightsaber)
+    lightsaber.update()
+    difference = lightsaber.led_strip.get_difference_map(old_lightsaber_led_strip)
     LightsaberWebSocket.send_updated_state(difference)
-    old_lightsaber = new_lightsaber
-    # print(str(lightsaber.led_strip))
+    old_lightsaber_led_strip = lightsaber.led_strip.copy()
 
 
 async def main():
     app = make_app()
     app.listen(6333)
 
-    background_sender = tornado.ioloop.PeriodicCallback(update_sender, WS_SEND_FREQUENCY_SECS * 1000)
+    background_sender = tornado.ioloop.PeriodicCallback(update_sender, config.WS_SEND_FREQUENCY_SECS * 1000)
     background_sender.start()
 
     await asyncio.Event().wait()

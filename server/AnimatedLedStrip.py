@@ -1,6 +1,4 @@
-import time
 import datetime
-import threading
 from typing import Dict, List
 
 from server.LedStrip import LedStrip
@@ -40,10 +38,6 @@ class AnimatedLedStrip:
 
         self.current_animation_start_time = datetime.datetime.now()
         self.current_animation_end_time = datetime.datetime.now()
-
-        self.running = True
-        self.background_thread = threading.Thread(target=self.background_thread)
-        self.background_thread.start()
 
     def update(self):
         # Update self.led_strip to current state according to time remaining in current animation
@@ -91,9 +85,7 @@ class AnimatedLedStrip:
         # Set the target state of the lightsaber and start the animation
         self.previous_length = self.last_length
         self.target_length = length
-        self.previous_color_map = self.target_color_map
-        # TODO avoid a jarring transition by calculating the effective
-        #  current color map and assigning that to previous_color_map
+        self.previous_color_map = self.led_strip.leds
         self.target_color_map = color_map
 
         now = datetime.datetime.now()
@@ -101,12 +93,3 @@ class AnimatedLedStrip:
         self.current_animation_end_time = now + datetime.timedelta(seconds=duration)
         self.animating = True
         print("Animating to length " + str(length) + " over " + str(duration) + " seconds")
-
-    def background_thread(self):
-        while self.running:
-            self.update()
-            time.sleep(0.02)
-
-    def stop(self):
-        self.running = False
-        self.background_thread.join()
