@@ -3,6 +3,8 @@ import requests
 
 class TangoConnection:
 
+    # This the old way we used to connect directly to Tango. Now we go through the Autolab Portal.
+
     def __init__(self, url: str, tango_api_key: str):
         # url should look like "http://something.buffalo.edu:1234"
         self.url = url

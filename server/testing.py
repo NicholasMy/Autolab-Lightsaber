@@ -1,11 +1,11 @@
 import secret
-from TangoConnection import TangoConnection
+from AutolabPortalConnection import AutolabPortalConnection
 
 
 def get_jobs():
-    tango = TangoConnection(secret.TANGO_URL, secret.TANGO_KEY)
-    jobs = tango.get_current_jobs_count()
-    print("Returned ", str(jobs))
+    portal = AutolabPortalConnection(secret.PORTAL_URL, secret.PORTAL_API_KEY)
+    jobs = portal.get_tango_histogram()
+    print(jobs)
 
 
 if __name__ == '__main__':

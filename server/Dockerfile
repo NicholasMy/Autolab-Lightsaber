@@ -5,6 +5,6 @@ COPY . .
 
 RUN pip install -r requirements.txt
 
-COPY server.py .
+COPY lightsaber_server.py .
 
-CMD ["python3", "-u", "server.py"]
+CMD ["python3", "-u", "lightsaber_server.py"]
