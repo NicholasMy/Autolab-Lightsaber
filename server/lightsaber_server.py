@@ -1,16 +1,19 @@
 import asyncio
 import datetime
 import json
-import random
-from typing import Optional, Awaitable
+from typing import Optional, Awaitable, List, Tuple
 
 import tornado.web
 import tornado.websocket
 import tornado.ioloop
 
 import config
+from AutolabPortalConnection import AutolabPortalConnection
+from secret import PORTAL_URL, PORTAL_API_KEY
+from timer import Timer
 from AnimatedLedStrip import AnimatedLedStrip
 from color_map_builder import build_linear_color_map
+from infinite_queue import InfiniteQueue
 
 
 class LightsaberWebSocket(tornado.websocket.WebSocketHandler):
@@ -66,28 +69,49 @@ def make_app():
     ])
 
 
+portal = AutolabPortalConnection(PORTAL_URL, PORTAL_API_KEY)
 lightsaber = AnimatedLedStrip(config.MAX_LED_INDEX, config.DEFAULT_LED_BRIGHTNESS)
 old_lightsaber_led_strip = lightsaber.led_strip.copy()
 last_update_time = datetime.datetime.now() - datetime.timedelta(seconds=config.DATA_FETCH_SECS)
 
+time_scale_queue: InfiniteQueue = InfiniteQueue(
+    [(value, color) for value, color in zip(config.TIME_SCALE_VALUES, config.TIME_SCALE_COLORS)])
+time_scale_seconds, time_scale_color = time_scale_queue.next()
+time_scale_timer: Timer = Timer(config.TIME_SCALE_CYCLE_SECS)
+
+
+def update_time_scale():
+    global time_scale_seconds, time_scale_color
+    time_scale_seconds, time_scale_color = time_scale_queue.next()
+    time_scale_timer.reset()
+    # print(f"Updated time scale: {time_scale_seconds} seconds")
+
+
+def get_target_scale_max(value: int) -> Tuple[int, List[int]]:
+    if value <= config.VALUE_SCALE_VALUES[0]:
+        return config.VALUE_SCALE_VALUES[0], config.VALUE_SCALE_COLORS[0]
+    for i, v in enumerate(config.VALUE_SCALE_VALUES):
+        if value <= v:
+            return config.VALUE_SCALE_VALUES[i], config.VALUE_SCALE_COLORS[i]
+
 
 def update_target():
-    # TODO get actual data from Tango and determine how to represent it on the Lightsaber
-    # portal = AutolabPortalConnection(secret.PORTAL_URL, secret.PORTAL_API_KEY)
-    # jobs = portal.get_tango_histogram()[86400]
-    # jobs = random.randint(0, 5)
-    # target_percent = jobs * 100 // 5
-    target_length = random.randint(0, config.MAX_LED_INDEX)
-    # Just for testing; this is very inefficient:
-    color_map = random.choice([
-        build_linear_color_map([0, 0, 255], [255, 0, 0], config.MAX_LED_INDEX),
-        build_linear_color_map([255, 0, 0], [0, 0, 255], config.MAX_LED_INDEX),
-        build_linear_color_map([0, 255, 0], [255, 0, 0], config.MAX_LED_INDEX),
-        build_linear_color_map([255, 0, 0], [0, 255, 0], config.MAX_LED_INDEX),
-        build_linear_color_map([0, 255, 0], [0, 0, 255], config.MAX_LED_INDEX),
-        build_linear_color_map([0, 0, 255], [0, 255, 0], config.MAX_LED_INDEX),
-    ])
+    if time_scale_timer.is_done():
+        update_time_scale()
+    histogram = portal.get_tango_histogram()
+    jobs: int = histogram[time_scale_seconds]
+    scale_max, scale_color = get_target_scale_max(jobs)
+    target_length = int(jobs / scale_max * config.MAX_LED_INDEX)
+    color_map = build_linear_color_map(time_scale_color, scale_color, config.MAX_LED_INDEX)
     lightsaber.set_target_state(target_length, color_map, config.ANIMATION_DURATION_SECS)
+
+    # print(f"{time_scale_seconds=}")
+    # print(f"{time_scale_color=}")
+    # print(f"{target_length=}")
+    # print(f"(max) {scale_color=}")
+    # print(f"{scale_max=}")
+    # print(f"{jobs=}")
+    # print("-" * 10)
 
 
 def update_sender():
