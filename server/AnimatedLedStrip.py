@@ -1,7 +1,8 @@
 import datetime
 from typing import Dict, List
 
-from server.LedStrip import LedStrip
+import config
+from LedStrip import LedStrip
 
 
 def interpolate(start: float, end: float, percent: float) -> float:
@@ -74,6 +75,13 @@ class AnimatedLedStrip:
             self.led_strip.leds[i] = new_color
 
         self.last_length = current_length
+
+        if config.ALWAYS_SHOW_MAX_SCALE_COLOR:
+            for i in range(self.led_strip.max_led_index - 2, self.led_strip.max_led_index + 1):
+                target_color = self.target_color_map.get(i, self.default_color)
+                previous_color = self.previous_color_map.get(i, self.default_color)
+                new_color = interpolate_rgb(previous_color, target_color, animation_percent_elapsed)
+                self.led_strip.leds[i] = new_color
 
         if animation_percent_elapsed == 100.0:
             # Animation is over
