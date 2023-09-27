@@ -1,5 +1,5 @@
 import secret
-from AutolabPortalConnection import AutolabPortalConnection
+from autolab_portal_connection import AutolabPortalConnection
 
 
 def get_jobs():

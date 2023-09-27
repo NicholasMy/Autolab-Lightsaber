@@ -1,6 +1,6 @@
 import unittest
 
-from server.AnimatedLedStrip import interpolate, interpolate_rgb
+from server.animated_led_strip import interpolate, interpolate_rgb
 
 
 class Test(unittest.TestCase):

@@ -8,10 +8,10 @@ import tornado.websocket
 import tornado.ioloop
 
 import config
-from AutolabPortalConnection import AutolabPortalConnection
+from autolab_portal_connection import AutolabPortalConnection
 from secret import PORTAL_URL, PORTAL_API_KEY
 from timer import Timer
-from AnimatedLedStrip import AnimatedLedStrip
+from animated_led_strip import AnimatedLedStrip
 from color_map_builder import build_linear_color_map
 from infinite_queue import InfiniteQueue
 

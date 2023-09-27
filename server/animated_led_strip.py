@@ -2,7 +2,7 @@ import datetime
 from typing import Dict, List
 
 import config
-from LedStrip import LedStrip
+from led_strip import LedStrip
 
 
 def interpolate(start: float, end: float, percent: float) -> float:

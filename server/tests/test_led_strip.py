@@ -1,6 +1,6 @@
 import unittest
 
-from server.LedStrip import LedStrip
+from server.led_strip import LedStrip
 
 
 class Test(unittest.TestCase):
