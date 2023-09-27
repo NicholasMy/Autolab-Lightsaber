@@ -33,11 +33,9 @@ class BlinkController:
                     self.blink_timer.set_duration(self.blink_off_time)
                     self.blink_on = False
                     self.remaining_blinks -= 1
-                    print(f"Finished blink. Now: {self.remaining_blinks=} {self.blink_on=}")
                 else:
                     self.blink_timer.set_duration(self.blink_on_time)
                     self.blink_on = True
-                    print(f"Starting blink. Now: {self.remaining_blinks=} {self.blink_on=}")
                 self.blink_timer.reset()
 
         if self.blink_on:
