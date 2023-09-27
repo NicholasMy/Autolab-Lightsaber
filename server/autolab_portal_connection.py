@@ -13,7 +13,7 @@ class AutolabPortalConnection:
 
     def get_tango_histogram(self) -> Dict[int, int]:
         url = f"{self.url}/api/user_api/tango_histogram/"
-        res = requests.get(url, headers=self.get_auth_headers())
+        res = requests.get(url, headers=self.get_auth_headers(), timeout=1)
         str_dict = res.json()
         # The keys are strings. Convert them to ints.
         ret = {int(k): v for k, v in str_dict.items()}

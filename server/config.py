@@ -31,5 +31,7 @@ VALUE_SCALE_COLORS = [
 # Additionally, `int(DATA_FETCH_SECS)` must exist in the histogram dict.
 BLINK_ON_SUBMISSION: bool = True
 
+BLINK_TIME_SECS: float = 0.4
+
 # Should 3 LEDs always be lit up at the max scale? This helps to understand the scale when the bar isn't very long.
 ALWAYS_SHOW_MAX_SCALE_COLOR: bool = True

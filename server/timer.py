@@ -6,6 +6,9 @@ class Timer:
         self.duration = duration
         self.start_time = datetime.now()
 
+    def set_duration(self, duration: float):
+        self.duration = duration
+
     def reset(self):
         self.start_time = datetime.now()
 

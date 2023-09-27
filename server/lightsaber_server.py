@@ -10,6 +10,8 @@ import tornado.ioloop
 import config
 from autolab_portal_connection import AutolabPortalConnection
 from secret import PORTAL_URL, PORTAL_API_KEY
+from blink_controller import BlinkController
+from led_strip import LedStrip
 from timer import Timer
 from animated_led_strip import AnimatedLedStrip
 from color_map_builder import build_linear_color_map
@@ -78,6 +80,8 @@ time_scale_queue: InfiniteQueue = InfiniteQueue(
     [(value, color) for value, color in zip(config.TIME_SCALE_VALUES, config.TIME_SCALE_COLORS)])
 time_scale_seconds, time_scale_color = time_scale_queue.next()
 time_scale_timer: Timer = Timer(config.TIME_SCALE_CYCLE_SECS)
+blink_led_strip: LedStrip = LedStrip(config.MAX_LED_INDEX, config.DEFAULT_LED_BRIGHTNESS)  # Default empty LED strip
+blink_controller: BlinkController = BlinkController(blink_led_strip, config.BLINK_TIME_SECS, config.BLINK_TIME_SECS)
 
 
 def update_time_scale():
@@ -104,14 +108,9 @@ def update_target():
     target_length = int(jobs / scale_max * config.MAX_LED_INDEX)
     color_map = build_linear_color_map(time_scale_color, scale_color, config.MAX_LED_INDEX)
     lightsaber.set_target_state(target_length, color_map, config.ANIMATION_DURATION_SECS)
-
-    # print(f"{time_scale_seconds=}")
-    # print(f"{time_scale_color=}")
-    # print(f"{target_length=}")
-    # print(f"(max) {scale_color=}")
-    # print(f"{scale_max=}")
-    # print(f"{jobs=}")
-    # print("-" * 10)
+    if config.BLINK_ON_SUBMISSION:
+        new_submissions: int = histogram[int(config.DATA_FETCH_SECS)]
+        blink_controller.set_blinks(new_submissions)
 
 
 def update_sender():
@@ -124,9 +123,11 @@ def update_sender():
         last_update_time = now
 
     lightsaber.update()
-    difference = lightsaber.led_strip.get_difference_map(old_lightsaber_led_strip)
+    blinking_led_strip: LedStrip = blink_controller.get_led_strip(lightsaber.led_strip)
+    difference = blinking_led_strip.get_difference_map(old_lightsaber_led_strip)
+    # TODO if difference is too large, split it into multiple messages
     LightsaberWebSocket.send_updated_state(difference)
-    old_lightsaber_led_strip = lightsaber.led_strip.copy()
+    old_lightsaber_led_strip = blinking_led_strip.copy()
 
 
 async def main():
