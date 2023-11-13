@@ -50,9 +50,16 @@ class LightsaberWebSocket(tornado.websocket.WebSocketHandler):
         self.write_message(json.dumps(lightsaber.led_strip.to_dict()))
 
     @staticmethod
+    def send_updated_state_json(json_str: str):
+        # Separated from send_updated_state so that the JSON can be precomputed elsewhere
+        # to improve performance when sending updates rapidly.
+        # Most of the time, send_updated_state is performant enough.
+        LightsaberWebSocket.broadcast(json_str)
+
+    @staticmethod
     def send_updated_state(update_map: dict):
         # Called when the light needs to update
-        LightsaberWebSocket.broadcast(json.dumps(update_map))
+        LightsaberWebSocket.send_updated_state_json(json.dumps(update_map))
 
 
 class MainHandler(tornado.web.RequestHandler):
@@ -125,8 +132,27 @@ def update_sender():
     lightsaber.update()
     blinking_led_strip: LedStrip = blink_controller.get_led_strip(lightsaber.led_strip)
     difference = blinking_led_strip.get_difference_map(old_lightsaber_led_strip)
-    # TODO if difference is too large, split it into multiple messages
-    LightsaberWebSocket.send_updated_state(difference)
+
+    if len(difference) < 20:
+        LightsaberWebSocket.send_updated_state(difference)
+    else:
+        # If difference is too large, split it into multiple messages.
+        # The microcontroller can't load the whole difference into memory at once.
+        # Splitting it up into more parts than necessary makes the animation look smoother.
+        # Too many parts will cancel out the smooth growing/shrinking effect after a blink.
+        n = 2
+        pieces: List[dict] = [{} for _ in range(n)]
+
+        diff_len = len(difference)
+        for i, (k, v) in enumerate(difference.items()):
+            index = int(i / diff_len * n)
+            pieces[index][k] = v
+
+        # Precomputing the JSON here reduces the time between sending pieces
+        json_pieces: List[str] = [json.dumps(piece) for piece in pieces]
+        for piece in json_pieces:
+            LightsaberWebSocket.send_updated_state_json(piece)
+
     old_lightsaber_led_strip = blinking_led_strip.copy()
 
 
