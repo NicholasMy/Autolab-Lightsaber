@@ -4,3 +4,4 @@ services:
     build: server
     ports:
       - "6333:6333"
+    restart: unless-stopped
